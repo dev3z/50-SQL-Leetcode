@@ -1,19 +1,19 @@
-# SQL Cheat Sheet
+# SQL Cheat Sheet with Examples (For Business Analysts)
 
 ---
 
 ## 1. Basic SQL Syntax
 - **SELECT**: Retrieve data from a table.
   ```sql
-  SELECT column1, column2 FROM table_name WHERE condition;
+  SELECT name, age FROM employees WHERE age > 30;
   ```
 - **DISTINCT**: Remove duplicates.
   ```sql
-  SELECT DISTINCT column_name FROM table_name;
+  SELECT DISTINCT department FROM employees;
   ```
 - **LIMIT/OFFSET**: Limit the number of rows returned.
   ```sql
-  SELECT * FROM table_name LIMIT 10 OFFSET 5;
+  SELECT * FROM employees LIMIT 5 OFFSET 10;
   ```
 
 ---
@@ -21,39 +21,62 @@
 ## 2. Filtering Data
 - **WHERE Clause**: Filter rows.
   ```sql
-  SELECT * FROM table_name WHERE condition;
+  SELECT * FROM employees WHERE salary > 50000 AND department = 'HR';
   ```
 - **Operators**:
   - Comparison: `=`, `!=`, `<`, `>`, `<=`, `>=`
+    ```sql
+    SELECT * FROM employees WHERE age >= 30;
+    ```
   - Logical: `AND`, `OR`, `NOT`
-  - Pattern Matching: `LIKE`, `ILIKE` (case-insensitive), `%` (wildcard)
+    ```sql
+    SELECT * FROM employees WHERE (age > 30 AND department = 'IT') OR salary > 60000;
+    ```
+  - Pattern Matching: `LIKE`, `%` (wildcard)
+    ```sql
+    SELECT * FROM employees WHERE name LIKE 'A%'; -- Names starting with 'A'
+    ```
   - NULL: `IS NULL`, `IS NOT NULL`
+    ```sql
+    SELECT * FROM employees WHERE manager_id IS NULL;
+    ```
 
 ---
 
 ## 3. Aggregate Functions
 - Functions applied to groups of data:
   - `COUNT()`: Number of rows.
+    ```sql
+    SELECT COUNT(*) AS total_employees FROM employees;
+    ```
   - `SUM()`: Sum of values.
+    ```sql
+    SELECT SUM(salary) AS total_salary FROM employees;
+    ```
   - `AVG()`: Average value.
+    ```sql
+    SELECT AVG(salary) AS average_salary FROM employees WHERE department = 'IT';
+    ```
   - `MIN()`, `MAX()`: Minimum and maximum values.
-  ```sql
-  SELECT COUNT(*), AVG(column_name) FROM table_name WHERE condition;
-  ```
+    ```sql
+    SELECT MIN(salary) AS min_salary, MAX(salary) AS max_salary FROM employees;
+    ```
 
 ---
 
 ## 4. Grouping and Aggregation
 - **GROUP BY**: Group rows sharing a property.
   ```sql
-  SELECT column1, SUM(column2) FROM table_name GROUP BY column1;
+  SELECT department, AVG(salary) AS avg_salary 
+  FROM employees 
+  GROUP BY department;
   ```
 - **HAVING**: Filter groups (used with `GROUP BY`).
   ```sql
-  SELECT column1, SUM(column2) 
-  FROM table_name
-  GROUP BY column1
-  HAVING SUM(column2) > 100;
+  SELECT department, SUM(salary) AS total_salary 
+  FROM employees 
+  GROUP BY department
+  HAVING SUM(salary) > 200000;
   ```
 
 ---
@@ -61,7 +84,7 @@
 ## 5. Sorting Data
 - **ORDER BY**: Sort results.
   ```sql
-  SELECT * FROM table_name ORDER BY column_name ASC|DESC;
+  SELECT * FROM employees ORDER BY salary DESC, age ASC;
   ```
 
 ---
@@ -69,13 +92,17 @@
 ## 6. Joining Tables
 - **INNER JOIN**: Matching rows in both tables.
   ```sql
-  SELECT a.column1, b.column2
-  FROM table1 a
-  INNER JOIN table2 b ON a.id = b.id;
+  SELECT e.name, d.department_name
+  FROM employees e
+  INNER JOIN departments d
+  ON e.department_id = d.department_id;
   ```
 - **LEFT JOIN**: All rows from the left, matching from the right.
   ```sql
-  SELECT * FROM table1 LEFT JOIN table2 ON table1.id = table2.id;
+  SELECT e.name, d.department_name
+  FROM employees e
+  LEFT JOIN departments d
+  ON e.department_id = d.department_id;
   ```
 - **RIGHT JOIN**: All rows from the right, matching from the left.
 - **FULL OUTER JOIN**: All rows from both tables.
@@ -85,11 +112,11 @@
 ## 7. Subqueries
 - **Subquery in SELECT**:
   ```sql
-  SELECT column1, (SELECT MAX(column2) FROM table2) AS max_value FROM table1;
+  SELECT name, (SELECT MAX(salary) FROM employees) AS highest_salary FROM employees;
   ```
 - **Subquery in WHERE**:
   ```sql
-  SELECT * FROM table1 WHERE column1 IN (SELECT column2 FROM table2);
+  SELECT * FROM employees WHERE department_id IN (SELECT department_id FROM departments WHERE location = 'NYC');
   ```
 
 ---
@@ -97,10 +124,10 @@
 ## 8. Common Table Expressions (CTEs)
 - Temporary result set for reuse.
   ```sql
-  WITH cte_name AS (
-    SELECT * FROM table_name WHERE condition
+  WITH high_salary_employees AS (
+    SELECT * FROM employees WHERE salary > 80000
   )
-  SELECT * FROM cte_name WHERE condition2;
+  SELECT * FROM high_salary_employees WHERE department = 'IT';
   ```
 
 ---
@@ -108,8 +135,9 @@
 ## 9. Window Functions
 - Perform calculations across a set of rows related to the current row.
   ```sql
-  SELECT column1, ROW_NUMBER() OVER (PARTITION BY column2 ORDER BY column3) AS row_num
-  FROM table_name;
+  SELECT name, department, salary,
+         ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) AS rank
+  FROM employees;
   ```
 - Common window functions:
   - `ROW_NUMBER()`, `RANK()`, `DENSE_RANK()`
@@ -120,15 +148,18 @@
 ## 10. Modifying Data
 - **INSERT**: Add new rows.
   ```sql
-  INSERT INTO table_name (column1, column2) VALUES (value1, value2);
+  INSERT INTO employees (name, age, department_id, salary)
+  VALUES ('John Doe', 35, 3, 75000);
   ```
 - **UPDATE**: Modify existing rows.
   ```sql
-  UPDATE table_name SET column1 = value1 WHERE condition;
+  UPDATE employees 
+  SET salary = salary * 1.10 
+  WHERE department = 'HR';
   ```
 - **DELETE**: Remove rows.
   ```sql
-  DELETE FROM table_name WHERE condition;
+  DELETE FROM employees WHERE age < 25;
   ```
 
 ---
@@ -136,29 +167,48 @@
 ## 11. Advanced SQL
 - **Case Statements**: Conditional logic.
   ```sql
-  SELECT column1,
+  SELECT name, 
          CASE 
-           WHEN condition1 THEN result1
-           WHEN condition2 THEN result2
-           ELSE result3
-         END AS alias_name
-  FROM table_name;
+           WHEN salary > 80000 THEN 'High'
+           WHEN salary BETWEEN 50000 AND 80000 THEN 'Medium'
+           ELSE 'Low'
+         END AS salary_category
+  FROM employees;
   ```
 - **UNION**: Combine results of two queries.
   ```sql
-  SELECT column1 FROM table1
+  SELECT name FROM employees WHERE department = 'HR'
   UNION
-  SELECT column1 FROM table2;
+  SELECT name FROM employees WHERE salary > 60000;
   ```
 - **EXISTS**: Check for existence of rows in a subquery.
   ```sql
-  SELECT * FROM table1 WHERE EXISTS (SELECT 1 FROM table2 WHERE condition);
+  SELECT * 
+  FROM employees 
+  WHERE EXISTS (SELECT 1 FROM departments WHERE departments.department_id = employees.department_id AND location = 'NYC');
+  ```
+- **Recursive CTEs**: Example for hierarchical data.
+  ```sql
+  WITH RECURSIVE EmployeeHierarchy AS (
+    SELECT employee_id, name, manager_id
+    FROM employees
+    WHERE manager_id IS NULL
+    UNION ALL
+    SELECT e.employee_id, e.name, e.manager_id
+    FROM employees e
+    INNER JOIN EmployeeHierarchy eh
+    ON e.manager_id = eh.employee_id
+  )
+  SELECT * FROM EmployeeHierarchy;
   ```
 
 ---
 
 ## 12. Indexes and Performance
 - Use indexes to speed up queries.
+  ```sql
+  CREATE INDEX idx_salary ON employees(salary);
+  ```
 - Avoid using `SELECT *` in production.
 - Analyze query plans for optimization: `EXPLAIN` or `EXPLAIN ANALYZE`.
 
@@ -168,19 +218,31 @@
 - **Self-Joins**: Compare rows in the same table.
   ```sql
   SELECT a.id, b.id
-  FROM table_name a, table_name b
-  WHERE a.column1 > b.column1;
+  FROM employees a, employees b
+  WHERE a.salary > b.salary AND a.department = b.department;
   ```
 - **Ranking Problems**: Use `ROW_NUMBER()` or `RANK()`.
+  ```sql
+  SELECT name, salary, RANK() OVER (ORDER BY salary DESC) AS rank
+  FROM employees;
+  ```
 - **Top-N Queries**: Use `LIMIT` with `ORDER BY`.
+  ```sql
+  SELECT name, salary FROM employees ORDER BY salary DESC LIMIT 5;
+  ```
 - **Gaps and Islands**: Use window functions and `GROUP BY`.
+  ```sql
+  SELECT department, COUNT(*) AS employee_count
+  FROM employees
+  GROUP BY department;
+  ```
 
 ---
 
 ## 14. Business Analyst-Specific SQL
 - Revenue analysis:
   ```sql
-  SELECT SUM(revenue) AS total_revenue, product_category
+  SELECT product_category, SUM(revenue) AS total_revenue
   FROM sales_data
   GROUP BY product_category
   ORDER BY total_revenue DESC;
@@ -191,6 +253,13 @@
   FROM purchases
   GROUP BY customer_id
   HAVING COUNT(*) > 5;
+  ```
+- Monthly trend analysis:
+  ```sql
+  SELECT DATE_TRUNC('month', sale_date) AS month, SUM(revenue) AS total_revenue
+  FROM sales
+  GROUP BY DATE_TRUNC('month', sale_date)
+  ORDER BY month;
   ```
 
 ---
